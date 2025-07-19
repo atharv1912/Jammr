@@ -1,7 +1,6 @@
 console.log("Client-side app.js loaded");
 
-// You no longer need `require()` here
-// const io = require('socket.io-client'); ❌ REMOVE THIS
+
 
 console.log("roomId:", roomId);
 

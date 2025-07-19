@@ -19,11 +19,18 @@ app.use(express.static('public'));
 // Route for the home page
 app.get('/', (req, res) => {
   // Redirect to a new unique room
-  res.redirect(`/${uuidV4()}`);
+  res.render('index');
 });
 app.get('/:room', (req, res) => {
-  res.render('index', { roomId: req.params.room });
+  res.render('room', { roomId: req.params.room });
 });
+
+app.post('/new', (req, res) => {
+    const roomId = uuidV4();
+    res.redirect(`/${roomId}`);
+});
+
+
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
