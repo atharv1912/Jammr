@@ -1,33 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Meeting</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Meeting</title>
+  <link rel="stylesheet" href="/css/style.css">
 
-    <script>
-        // Set the room ID from the server-side variable
-        const roomId = '<%= roomId %>';
-        
-    </script>
-    
-    <script src="/socket.io/socket.io.js" defer></script>
-    <script src="https://unpkg.com/peerjs@1.3.1/dist/peer.min.js" defer></script>
-    
-    <script src="/js/app.js" defer></script>
+  <script>
+    const roomId = '<%= roomId %>';
+  </script>
+
+  <!-- Include socket.io and PeerJS only once -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/peerjs@1.3.1/dist/peer.min.js"></script>
+
+  <!-- Load app.js first so it sets up socket -->
+  <script src="/js/app.js" defer></script>
+  
 </head>
 <body>
-    <h1>this is your room</h1>
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+  <h1>This is your room</h1>
+  <canvas id="whiteboard" style="position:absolute; top:0; left:0; z-index:0;"></canvas>
+  <canvas id="pointerlayer" style="position:absolute; top:0; left:0; z-index:1; pointer-events: none;"></canvas>
+  
 
-
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-
-
-
-    
 </body>
 </html>

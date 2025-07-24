@@ -40,7 +40,21 @@ io.on('connection', (socket) => {
 
   // ✅ updated event name
   socket.to(roomId).emit('user-connected', socket.id);
+  socket.on('drawing', (data) => {
+    console.log('Received drawing data from', socket.id);
+    socket.to(roomId).emit('drawing', data);
+
+
   });
+  socket.on('mousemove', (data) => {
+    console.log('Mouse moved:', data);
+    socket.to(roomId).emit('mousemove', data); 
+
+  });
+});
+  
+  
+
 
   // You can now handle events
   socket.on('disconnect', () => {
