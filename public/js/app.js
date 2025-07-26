@@ -68,7 +68,23 @@ let drawing = false;
 
 let currentLine = [];
 const drawingHistory = [];
+// Color picker and clear button
+const colorPicker = document.getElementById('colorPicker');
+const clearButton = document.getElementById('clearButton');
 
+// Set initial color
+let currentColor = colorPicker.value;
+
+// Update color on input change
+colorPicker.addEventListener('input', (e) => {
+  currentColor = e.target.value;
+});
+
+// Clear button event
+clearButton.addEventListener('click', () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  socket.emit('clearCanvas');
+});
 
 // Drawing event handlers
 canvas.addEventListener('mousedown', (e) => {
@@ -79,11 +95,13 @@ canvas.addEventListener('mousedown', (e) => {
 
   ctx.beginPath();
   ctx.moveTo(e.clientX, e.clientY);
+  
 
-  currentLine = [{ x: e.clientX, y: e.clientY }];
+  currentLine = [{ x: e.clientX, y: e.clientY, color: currentColor }];
+ 
 });
 
-canvas.addEventListener('mouseup', () => {
+canvas.addEventListener('mouseup', (e) => {
   if (!drawing) return;
   drawing = false;
 
@@ -109,12 +127,12 @@ canvas.addEventListener('mousemove', (e) => {
 
   // Draw the latest segment on our own canvas for instant feedback
   const prevPoint = currentLine[currentLine.length - 2];
-  drawLine(prevPoint.x, prevPoint.y, point.x, point.y, 'black', false); // IMPORTANT: emit is false
+  drawLine(prevPoint.x, prevPoint.y, point.x, point.y, currentColor, false); // IMPORTANT: emit is false
 
   socket.emit('drawing-segment', {
     from: prevPoint,
     to: point,
-    color: 'black'
+    color: currentColor
   });
 });
 
@@ -129,10 +147,12 @@ window.addEventListener('resize', () => {
 function drawCompleteLine(line, context) {
   if (!line || line.length < 2) return;
   context.beginPath();
+  context.strokeStyle = line[0].color || 'black'; // Use the color from the first point
   context.moveTo(line[0].x, line[0].y);
   for (let i = 1; i < line.length; i++) {
     context.lineTo(line[i].x, line[i].y);
   }
+  
   context.stroke();
 }
 // Add this function to your script
