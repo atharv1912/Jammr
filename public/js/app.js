@@ -16,17 +16,28 @@ socket.on('connect', () => {
   // Listener for a new user joining
   socket.on('user-connected', (userId) => {
     console.log('New user joined the room:', userId);
+  
   });
-
   // Listener for a user leaving
   socket.on('user-disconnected', (userId) => {
     console.log('User disconnected:', userId);
   });
 
   // Listener for drawing events from other users
-  socket.on('drawing', (data) => {
-    console.log('Receiving drawing from another user');
-    drawLine(data.x0, data.y0, data.x1, data.y1, data.color, false);
+  socket.on('drawing', (lineData) => {
+  console.log('Receiving a complete line from another user');
+  // Use the function that can draw an array of points
+  drawLine(lineData.x0, lineData.y0, lineData.x1, lineData.y1, lineData.color, false);
+});
+   socket.on('drawing-segment', (segment) => {
+  const { from, to, color } = segment;
+  drawLine(from.x, from.y, to.x, to.y, color || 'black', false);
+});
+
+
+  socket.on('draw-history', (history) => {
+    console.log('Drawing history received:', history);
+    drawHistory(history, ctx);
   });
   socket.on('mousemove', (data) => {
 
@@ -54,25 +65,57 @@ pointercanvas.height = window.innerHeight;
 pointerCtx.strokeStyle = 'red';
 pointerCtx.lineWidth = 2;
 let drawing = false;
-let current = { x: 0, y: 0 };
+
+let currentLine = [];
+const drawingHistory = [];
+
 
 // Drawing event handlers
 canvas.addEventListener('mousedown', (e) => {
   drawing = true;
-  current.x = e.clientX;
-  current.y = e.clientY;
+  // Start a new line with the first point
+
+  drawPointer(e.clientX, e.clientY); // Draw pointer at the start
+
+  ctx.beginPath();
+  ctx.moveTo(e.clientX, e.clientY);
+
+  currentLine = [{ x: e.clientX, y: e.clientY }];
 });
 
-canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mouseup', () => {
+  if (!drawing) return;
+  drawing = false;
+
+  // IMPORTANT: Emit the entire completed line to the server
+  // The server from our previous discussion expects an array of points
+  socket.emit('drawing', currentLine);
+  drawPointer(e.clientX, e.clientY);
+
+});
+
 canvas.addEventListener('mouseout', () => drawing = false);
 
 canvas.addEventListener('mousemove', (e) => {
+  // Always emit the pointer position for other users
+  socket.emit('mousemove', { x: e.clientX, y: e.clientY });
   drawPointer(e.clientX, e.clientY);
+
   if (!drawing) return;
-  // Draw on my own canvas and emit the event to others
-  drawLine(current.x, current.y, e.clientX, e.clientY, 'black', true);
-  current.x = e.clientX;
-  current.y = e.clientY;
+
+  // Add the new point to the line we are currently drawing
+  const point = { x: e.clientX, y: e.clientY };
+  currentLine.push(point);
+
+  // Draw the latest segment on our own canvas for instant feedback
+  const prevPoint = currentLine[currentLine.length - 2];
+  drawLine(prevPoint.x, prevPoint.y, point.x, point.y, 'black', false); // IMPORTANT: emit is false
+
+  socket.emit('drawing-segment', {
+    from: prevPoint,
+    to: point,
+    color: 'black'
+  });
 });
 
 // Resizing canvas
@@ -82,8 +125,18 @@ window.addEventListener('resize', () => {
     // Note: This will clear the canvas. You might want to redraw the state if needed.
 });
 
-// 4. DEFINE THE DRAWING FUNCTION
-function drawLine(x0, y0, x1, y1, color, emit) {
+
+function drawCompleteLine(line, context) {
+  if (!line || line.length < 2) return;
+  context.beginPath();
+  context.moveTo(line[0].x, line[0].y);
+  for (let i = 1; i < line.length; i++) {
+    context.lineTo(line[i].x, line[i].y);
+  }
+  context.stroke();
+}
+// Add this function to your script
+function drawLine(x0, y0, x1, y1, color, isLocal) {
   ctx.beginPath();
   ctx.moveTo(x0, y0);
   ctx.lineTo(x1, y1);
@@ -92,19 +145,17 @@ function drawLine(x0, y0, x1, y1, color, emit) {
   ctx.stroke();
   ctx.closePath();
   
-
-  // If `emit` is false, it means this is a received drawing, so don't re-emit it.
-  if (!emit) return;
- 
-  // Emit the drawing event to the server
-  socket.emit('drawing', {
-    x0,
-    y0,
-    x1,
-    y1,
-    color
-  });
+  // Only emit if it's from local drawing
+  if (isLocal) {
+    socket.emit('drawing-segment', {
+      from: { x: x0, y: y0 },
+      to: { x: x1, y: y1 },
+      color: color
+    });
+  }
 }
+
+
 function drawPointer(x, y) {
   pointerCtx.clearRect(0, 0, pointercanvas.width, pointercanvas.height); // Clear previous pointer
   pointerCtx.beginPath();
@@ -112,13 +163,16 @@ function drawPointer(x, y) {
   pointerCtx.fillStyle = 'red';
   pointerCtx.fill();
   pointerCtx.closePath();
+}
 
-  // Emit the mouse move event to the server
-  socket.emit('mousemove', {
-    x,
-    y
+
+function drawHistory(history, ctx) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  // Loop through each complete line in the history
+  history.forEach(line => {
+    drawCompleteLine(line, ctx);
   });
-
+  // DO NOT EMIT FROM HERE - THIS CAUSED THE INFINITE LOOP
 }
 
 

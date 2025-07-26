@@ -43,6 +43,13 @@
             90% { opacity: 1; }
             100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
         }
+        #pointerlayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Allows clicks to pass through to the drawing canvas */
+            z-index: 10;
+            }
 
         /* Navigation */
         nav {
