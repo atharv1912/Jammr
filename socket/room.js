@@ -1,35 +1,47 @@
-// socketServer.js
-const roomPeers = {}; // Store room-peer mapping
+const roomhistory = {};
 
-module.exports = function (io) {
-  console.log('Socket server initialized');
+module.exports = (io) => {
+  
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+  console.log('User connected:', socket.id);
+  socket.on('joinRoom', (roomId) => {
+  console.log(`User ${socket.id} joined room: ${roomId}`);
+  socket.join(roomId);
 
-    socket.on('joinRoom', (roomId) => {
-      console.log(`User ${socket.id} joined room: ${roomId}`);
-      socket.join(roomId);
-
-      
-
-      socket.on('drawing', (data) => {
-        socket.to(roomId).emit('drawing', data);
-      });
-      
-
-    
+  
+  socket.to(roomId).emit('user-connected', socket.id);
+  if (!roomhistory[roomId]) {
+    roomhistory[roomId] = [];
+  }
+  socket.emit('draw-history', roomhistory[roomId]);
 
 
+  socket.on('drawing', (data) => {
+    console.log('Received drawing data from', socket.id);
+    roomhistory[roomId].push(data);
+    console.log('Updated drawing history:', roomhistory[roomId]);
+    socket.to(roomId).emit('drawing', data);
 
-      // Handle disconnect
-      socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
 
-        const disconnectedPeerId = roomPeers[roomId]?.[socket.id];
-        delete roomPeers[roomId]?.[socket.id];
-
-        socket.to(roomId).emit('user-disconnected', disconnectedPeerId);
-      });
-    });
   });
-};
+  socket.on('drawing-segment', (segment) => {
+  socket.to(roomId).emit('drawing-segment', segment);
+  });
+
+  socket.on('mousemove', (data) => {
+    // console.log('Mouse moved:', data);
+    socket.to(roomId).emit('mousemove', data); 
+
+  });
+});
+  
+  
+
+
+  // You can now handle events
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+}
