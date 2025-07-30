@@ -1,5 +1,5 @@
 # Jammr
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/atharv1912/Jammr.git)
+
 
 Jammr is a real-time, collaborative whiteboard application built with Node.js, Express, and Socket.IO. Designed for seamless group interaction, it allows multiple users to draw on a shared canvas simultaneously, making it an ideal tool for brainstorming, teaching, and remote teamwork. The user interface, branded as "StudyBuddy," provides a clean and intuitive experience for creating and joining collaborative sessions.
 
